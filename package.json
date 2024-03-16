@@ -1,0 +1,69 @@
+{
+  "name": "@drunk-pulumi/kubx",
+  "version": "0.0.1",
+  "author": "drunkcoding@outlook.com",
+  "description": "The custom pulumi helper for Kubernetes deployment",
+  "license": "MIT",
+  "private": false,
+  "keywords": [
+    "pulumi-kubernetes"
+  ],
+  "pulumi": {
+    "resource": true,
+    "name": "@drunk-pulumi/kubx"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/baoduy/drunk-pulumi-kubx.git"
+  },
+  "scripts": {
+    "build": "cross-env NODE_ENV=production npm run update-tsconfig && npx tsc && npm run copy-pkg",
+    "copy-pkg": "ts-node ./.tasks/npm-package.ts && cpy ReadMe.md .out-bin/",
+    "update-tsconfig": "ts-node ./.tasks/update-tsconfig.ts",
+    "pack": "cd .out-bin && npm pack && cd ../",
+    "postinstall": "husky install",
+    "new-stack": "pulumi stack init --secrets-provider=passphrase",
+    "up": "pulumi up --yes --skip-preview",
+    "reup": "pulumi up --refresh --yes --skip-preview",
+    "destroy": "pulumi destroy --yes --skip-preview",
+    "update": "npx npm-check-updates -u --deprecated",
+    "check": "npx depcheck --detailed",
+    "export": "pulumi stack export --file state.json",
+    "import": "pulumi stack import --file state.json",
+    "test-leak": "cross-env PULUMI_DEBUG_PROMISE_LEAKS=true TS_NODE_PROJECT='./tsconfig.test.json' mocha --timeout 10000 -r ts-node/register 'z_tests/**/*.ts'",
+    "test": "cross-env TS_NODE_PROJECT='./tsconfig.test.json' mocha --timeout 10000 -r ts-node/register 'z_tests/**/*.test.ts'",
+    "testcert": "cross-env TS_NODE_PROJECT='./tsconfig.test.json' mocha --timeout 10000 -r ts-node/register '**/*.ts'",
+    "test-cover": "cross-env TS_NODE_PROJECT='./tsconfig.test.json' nyc mocha --timeout 10000 -r ts-node/register 'z_tests/**/*.ts'",
+    "lint": "eslint **/*.ts --fix"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.28",
+    "@typescript-eslint/eslint-plugin": "^7.2.0",
+    "@typescript-eslint/parser": "^7.2.0",
+    "cpy-cli": "^5.0.0",
+    "cross-env": "^7.0.3",
+    "eslint": "^8.57.0",
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.2",
+    "nyc": "^15.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.2"
+  },
+  "dependencies": {
+    "@drunk-pulumi/azure": "^0.0.19",
+    "@pulumi/cloudflare": "^5.22.0",
+    "@pulumi/kubernetes": "^4.9.1",
+    "@pulumi/pulumi": "^3.111.1",
+    "@pulumi/tls": "^5.0.1"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "**/*.{js,ts}": [
+      "eslint --fix"
+    ]
+  }
+}
