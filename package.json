@@ -18,7 +18,7 @@
   },
   "scripts": {
     "build": "cross-env NODE_ENV=production npm run update-tsconfig && npx tsc && npm run copy-pkg",
-    "copy-pkg": "ts-node ./.tasks/npm-package.ts && cpy ReadMe.md .out-bin/",
+    "copy-pkg": "ts-node ./.tasks/npm-package.ts && cpy README.md .out-bin/",
     "update-tsconfig": "ts-node ./.tasks/update-tsconfig.ts",
     "pack": "cd .out-bin && npm pack && cd ../",
     "postinstall": "husky install",
