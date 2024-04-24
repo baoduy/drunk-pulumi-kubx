@@ -1,6 +1,6 @@
 import * as pulumi from '@pulumi/pulumi';
 import * as k8s from '@pulumi/kubernetes';
-import NginxIngress from '@drunk-pulumi/azure/KubeX/Ingress/NginxIngress';
+import NginxIngress from 'Ingress/NginxIngress';
 import { applyDeploymentRules } from '../SecurityRules';
 import Namespace from '../Namespace';
 import { getTlsName } from '../../CertHelper';
@@ -24,7 +24,7 @@ const createIdentity = async ({
   vaultInfo,
 }: IdentityProps) => {
   //Create Azure AD Identity for Authentication
-  return await IdentityCreator({
+  return IdentityCreator({
     name,
 
     appRoleAssignmentRequired: true,
