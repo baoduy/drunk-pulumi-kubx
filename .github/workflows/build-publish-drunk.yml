@@ -53,7 +53,7 @@ jobs:
           node-version: 20
           registry-url: 'https://registry.npmjs.org/'
 
-      - run: npm ci
+      - run: npm install --force
 
       #Fix node_modules/openpgp/openpgp.d.ts:10:46 - error
 #      - name: Replace text in file
