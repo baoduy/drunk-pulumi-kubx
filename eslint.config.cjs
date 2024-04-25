@@ -20,4 +20,5 @@ module.exports = {
     //"@typescript-eslint/no-unsafe-assignment":"off"
   },
   root: true,
+  //ignores:['pulumi-test/*']
 };

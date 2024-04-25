@@ -1,6 +1,6 @@
 import * as pulumi from '@pulumi/pulumi';
 import * as k8s from '@pulumi/kubernetes';
-import NginxIngress from 'Ingress/NginxIngress';
+import NginxIngress from '../../Ingress/NginxIngress';
 import { applyDeploymentRules } from '../SecurityRules';
 import Namespace from '../Namespace';
 import { getTlsName } from '../../CertHelper';
