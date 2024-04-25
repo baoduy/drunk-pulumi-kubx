@@ -35,7 +35,7 @@ export default async ({
 
       const cfProvider =
         c.provider ??
-        new cf.Provider(`cloudflare_${i}`, {
+        new cf.Provider(`cloudflare-${i}`, {
           apiToken: c.apiKey,
         });
 

@@ -1,0 +1,6 @@
+config:
+  azure-native:location: East Asia
+  drunk-pulumi-ksx-test:cf-token:
+    secure: AAABANLCla5lZMATKiPfFz9zt6yxglsomIi9pATZxdLGFpCfzyeIYL/rmEGsVzN32UzGXTciT4ZdqAo9iFIxYTaU6saOFXjF
+  drunk-pulumi-ksx-test:encrypt-pass:
+    secure: AAABADLwrHJ6lmd2RtvQCWVqjrdx0e8qmzidIpTw4JinFBuYjVvRY3sHrXTt/o9nwNGtZiGeWHe5aBMHOvQVWRFvusa6

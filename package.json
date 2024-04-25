@@ -18,7 +18,7 @@
   },
   "scripts": {
     "build": "cross-env NODE_ENV=production npm run update-tsconfig && npx tsc && npm run copy-pkg",
-    "copy-pkg": "ts-node ./.tasks/npm-package.ts && cpy ReadMe.md .out-bin/",
+    "copy-pkg": "ts-node ./.tasks/npm-package.ts && cpy README.md .out-bin/",
     "update-tsconfig": "ts-node ./.tasks/update-tsconfig.ts",
     "pack": "cd .out-bin && npm pack && cd ../",
     "postinstall": "husky install",
@@ -37,24 +37,24 @@
     "lint": "eslint **/*.ts --fix"
   },
   "devDependencies": {
-    "@types/node": "^20.11.28",
-    "@typescript-eslint/eslint-plugin": "^7.2.0",
-    "@typescript-eslint/parser": "^7.2.0",
+    "@types/node": "^20.12.7",
+    "@typescript-eslint/eslint-plugin": "^7.7.1",
+    "@typescript-eslint/parser": "^7.7.1",
     "cpy-cli": "^5.0.0",
     "cross-env": "^7.0.3",
-    "eslint": "^8.57.0",
+    "eslint": "^9.1.1",
     "husky": "^9.0.11",
     "lint-staged": "^15.2.2",
     "nyc": "^15.1.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.4.2"
+    "typescript": "^5.4.5"
   },
   "dependencies": {
-    "@drunk-pulumi/azure": "^0.0.19",
-    "@pulumi/cloudflare": "^5.22.0",
-    "@pulumi/kubernetes": "^4.9.1",
-    "@pulumi/pulumi": "^3.111.1",
-    "@pulumi/tls": "^5.0.1"
+    "@drunk-pulumi/azure": "^0.0.35",
+    "@pulumi/cloudflare": "^5.26.0",
+    "@pulumi/kubernetes": "^4.11.0",
+    "@pulumi/pulumi": "^3.113.3",
+    "@pulumi/tls": "^5.0.2"
   },
   "husky": {
     "hooks": {

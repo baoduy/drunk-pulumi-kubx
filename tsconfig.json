@@ -96,10 +96,11 @@
     "src/types.ts"
   ],
   "include": [
-    "**/*.ts"
+    "src/*.ts"
   ],
   "exclude": [
     "node_modules",
+    "pulumi-test",
     "z_tests",
     ".out-bin",
     ".tools",
