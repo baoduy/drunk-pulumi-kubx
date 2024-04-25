@@ -7,7 +7,7 @@ import { requireSecret} from "@drunk-pulumi/azure/Common/ConfigHelper";
 const rs = (async () => {
   const provider = createProvider({
     name: 'ks-provider',
-    kubeconfig: await decryptFile(`./ksconfig/st-k3s.config`),
+    kubeconfig: await decryptFile(`./ksconfig/local-ks.config`),
   });
 
   //CloudFlare Cert Import
