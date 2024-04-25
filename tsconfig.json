@@ -15,6 +15,7 @@
     "strict": true
   },
   "files": [
+    "pulumi-test/index.ts",
     "src/AcrSecret.ts",
     "src/Apps/AstroPage.ts",
     "src/Apps/KafKa.ts",
