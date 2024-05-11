@@ -15,6 +15,7 @@ import identityCreator from "@drunk-pulumi/azure/AzAd/Identity";
 import { KeyVaultInfo } from "@drunk-pulumi/azure/types";
 import { tenantId } from "@drunk-pulumi/azure/Common/AzureEnv";
 import { randomPassword } from "@drunk-pulumi/azure/Core/Random";
+import KsSecret from "../../Core/KsSecret";
 
 interface Props extends K8sArgs {
   name?: string;
@@ -60,6 +61,13 @@ export default ({
       })
     : undefined;
 
+  const secret = KsSecret({
+    name: "argo-cd-redis",
+    namespace: ns.metadata.name,
+    stringData: { "redis-password": redis.password },
+    ...others,
+  });
+
   const argoCD = new k8s.helm.v3.Chart(
     name,
     {
@@ -86,7 +94,11 @@ export default ({
         redis: {
           enabled: false,
         },
-        externalRedis: { enabled: true, ...redis },
+        externalRedis: {
+          enabled: true,
+          ...redis,
+          existingSecret: secret.metadata.name,
+        },
         rbac: { create: true },
         //SSO
         dex: {
