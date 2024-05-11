@@ -1,14 +1,14 @@
-import { DefaultK8sArgs } from '../../types';
-import * as k8s from '@pulumi/kubernetes';
-import { Input, interpolate, output } from '@pulumi/pulumi';
-import { randomPassword } from '@drunk-pulumi/azure/Core/Random';
-import { KeyVaultInfo } from '@drunk-pulumi/azure/types';
-import IdentityCreator from '@drunk-pulumi/azure/AzAd/Identity';
-import RoleCreator from '@drunk-pulumi/azure/AzAd/Role';
-import { Environments, tenantId } from '@drunk-pulumi/azure/Common/AzureEnv';
+import { DefaultK8sArgs } from "../../types";
+import * as k8s from "@pulumi/kubernetes";
+import { Input, interpolate, output } from "@pulumi/pulumi";
+import { randomPassword } from "@drunk-pulumi/azure/Core/Random";
+import { KeyVaultInfo } from "@drunk-pulumi/azure/types";
+import IdentityCreator from "@drunk-pulumi/azure/AzAd/Identity";
+import RoleCreator from "@drunk-pulumi/azure/AzAd/Role";
+import { Environments, tenantId } from "@drunk-pulumi/azure/Common/AzureEnv";
 
 type CaptchaType = {
-  type: 'image' | 'recaptcha' | 'hcaptcha' | 'mcaptcha' | 'cfturnstile';
+  type: "image" | "recaptcha" | "hcaptcha" | "mcaptcha" | "cfturnstile";
   siteKey: Input<string>;
   secret: Input<string>;
   url?: Input<string>;
@@ -23,7 +23,7 @@ type GroupMapType = {
 type GroupMapsType = Array<GroupMapType>;
 
 const getCaptchaPrefixKey = (captcha: CaptchaType) =>
-  captcha.type === 'cfturnstile' ? 'CF_TURNSTILE' : captcha.type.toUpperCase();
+  captcha.type === "cfturnstile" ? "CF_TURNSTILE" : captcha.type.toUpperCase();
 
 const createAzureADIdentity = ({
   name,
@@ -40,13 +40,12 @@ const createAzureADIdentity = ({
   const adminGroup = RoleCreator({
     env: Environments.Dev,
     appName: name,
-    roleName: 'Admins',
+    roleName: "Admins",
   });
-
   const devGroup = RoleCreator({
     env: Environments.Dev,
     appName: name,
-    roleName: 'Developers',
+    roleName: "Developers",
     members: groupMap
       ? [adminGroup.objectId, ...groupMap.map((g) => g.azureGroupId)]
       : [adminGroup.objectId],
@@ -57,13 +56,13 @@ const createAzureADIdentity = ({
     appRoleAssignmentRequired: false,
     createPrincipal: false,
     createClientSecret: true,
-    appType: 'web',
+    appType: "web",
     replyUrls: [`https://${host}/user/oauth2/AzureAD/callback`],
     vaultInfo,
 
     optionalClaims: {
-      idTokens: [{ name: 'groups', essential: false }],
-      accessTokens: [{ name: 'groups', essential: false }],
+      idTokens: [{ name: "groups", essential: false }],
+      accessTokens: [{ name: "groups", essential: false }],
     },
   });
 
@@ -81,7 +80,7 @@ const createAzureADIdentity = ({
   return { adminGroup, devGroup, groupTeamMap, identity };
 };
 
-interface HarborRepoProps extends DefaultK8sArgs {
+interface GiteaRepoProps extends DefaultK8sArgs {
   vaultInfo?: KeyVaultInfo;
   storageClass: Input<string>;
   host: string;
@@ -140,7 +139,7 @@ interface HarborRepoProps extends DefaultK8sArgs {
 // https://github.com/go-gitea/gitea
 // https://gitea.com/gitea/helm-chart
 export default ({
-  name = 'gitea',
+  name = "gitea",
   namespace,
   host,
   auth = { disableRegistration: true },
@@ -151,7 +150,7 @@ export default ({
   vaultInfo,
   provider,
   dependsOn,
-}: HarborRepoProps) => {
+}: GiteaRepoProps) => {
   const randomPassOptions = {
     length: 16,
     options: { special: false },
@@ -164,7 +163,7 @@ export default ({
         CAPTCHA_TYPE: captcha.type,
         [`${getCaptchaPrefixKey(captcha)}_SITEKEY`]: captcha.siteKey,
         [`${getCaptchaPrefixKey(captcha)}_SECRET`]: captcha.secret,
-        [`${getCaptchaPrefixKey(captcha)}_URL`]: captcha.url ?? '',
+        [`${getCaptchaPrefixKey(captcha)}_URL`]: captcha.url ?? "",
       }
     : {};
 
@@ -181,8 +180,8 @@ export default ({
     name,
     {
       namespace,
-      chart: 'gitea',
-      fetchOpts: { repo: 'https://dl.gitea.com/charts' },
+      chart: "gitea",
+      fetchOpts: { repo: "https://dl.gitea.com/charts" },
 
       values: {
         gitea: {
@@ -200,24 +199,24 @@ export default ({
           oauth: identityInfo
             ? [
                 {
-                  name: 'AzureAD',
+                  name: "AzureAD",
                   iconUrl:
-                    'https://code.benco.io/icon-collection/azure-icons/Azure-AD-B2C.svg',
-                  provider: 'openidConnect',
+                    "https://code.benco.io/icon-collection/azure-icons/Azure-AD-B2C.svg",
+                  provider: "openidConnect",
                   key: identityInfo.identity.clientId,
                   secret: identityInfo.identity.clientSecret,
                   autoDiscoverUrl: interpolate`https://login.microsoftonline.com/${tenantId}/v2.0/.well-known/openid-configuration`,
-                  requiredClaimName: 'groups',
+                  requiredClaimName: "groups",
                   requiredClaimValue: identityInfo.devGroup.objectId,
-                  scopes: 'openid email',
-                  groupClaimName: 'groups',
+                  scopes: "openid email",
+                  groupClaimName: "groups",
                   adminGroup: identityInfo.adminGroup.objectId,
                   groupTeamMap: identityInfo.groupTeamMap,
                 },
               ]
             : auth?.oauth
-            ? [{ provider: 'openidConnect', ...auth.oauth }]
-            : undefined,
+              ? [{ provider: "openidConnect", ...auth.oauth }]
+              : undefined,
 
           ldap: auth?.ldap,
 
@@ -225,27 +224,27 @@ export default ({
             actions: { ENABLED: `${Boolean(enabledActions)}` },
 
             admin: {
-              DISABLE_REGULAR_ORG_CREATION: 'true', //Only Admin able to create new Organization
+              DISABLE_REGULAR_ORG_CREATION: "true", //Only Admin able to create new Organization
             },
             oauth2_client: {
-              ENABLE_AUTO_REGISTRATION: 'true',
-              ACCOUNT_LINKING: 'auto',
-              UPDATE_AVATAR: 'true',
-              OPENID_CONNECT_SCOPES: 'openid email',
-              USERNAME: 'email',
+              ENABLE_AUTO_REGISTRATION: "true",
+              ACCOUNT_LINKING: "auto",
+              UPDATE_AVATAR: "true",
+              OPENID_CONNECT_SCOPES: "openid email",
+              USERNAME: "email",
             },
             openid: {
-              ENABLE_OPENID_SIGNIN: 'false',
-              ENABLE_OPENID_SIGNUP: 'true',
-              WHITELISTED_URIS: 'login.microsoftonline.com google.com',
+              ENABLE_OPENID_SIGNIN: "false",
+              ENABLE_OPENID_SIGNUP: "true",
+              WHITELISTED_URIS: "login.microsoftonline.com google.com",
             },
             database: {
-              DB_TYPE: 'postgres',
+              DB_TYPE: "postgres",
               HOST: interpolate`${postgres.host}:${postgres.port}`,
               NAME: postgres.database,
               USER: postgres.username,
               PASSWD: postgres.password,
-              SCHEMA: 'public',
+              SCHEMA: "public",
             },
             service: {
               ENABLE_CAPTCHA: `${Boolean(captchaConfig)}`,
@@ -253,50 +252,50 @@ export default ({
               ...captchaConfig,
 
               DISABLE_REGISTRATION: auth?.disableRegistration
-                ? 'true'
-                : 'false',
-              ENABLE_BASIC_AUTHENTICATION: 'false', // `${Boolean(auth?.localAdmin)}`,
-              ALLOW_ONLY_EXTERNAL_REGISTRATION: 'true',
-              DEFAULT_ALLOW_CREATE_ORGANIZATION: 'true', //only Admin able to create Organization
-              SHOW_REGISTRATION_BUTTON: 'false',
+                ? "true"
+                : "false",
+              ENABLE_BASIC_AUTHENTICATION: "false", // `${Boolean(auth?.localAdmin)}`,
+              ALLOW_ONLY_EXTERNAL_REGISTRATION: "true",
+              DEFAULT_ALLOW_CREATE_ORGANIZATION: "true", //only Admin able to create Organization
+              SHOW_REGISTRATION_BUTTON: "false",
             },
             server: {
-              DISABLE_SSH: 'true',
-              START_SSH_SERVER: 'false',
+              DISABLE_SSH: "true",
+              START_SSH_SERVER: "false",
               //APP_DATA_PATH = /data
               DOMAIN: host,
-              HTTP_PORT: '3000',
-              PROTOCOL: 'http',
+              HTTP_PORT: "3000",
+              PROTOCOL: "http",
               ROOT_URL: `https://${host}`,
               SSH_DOMAIN: host,
-              SSH_LISTEN_PORT: '22',
-              SSH_PORT: '22',
-              ENABLE_PPROF: 'false',
+              SSH_LISTEN_PORT: "22",
+              SSH_PORT: "22",
+              ENABLE_PPROF: "false",
 
               DISABLE_REGISTRATION: auth?.disableRegistration
-                ? 'true'
-                : 'false',
+                ? "true"
+                : "false",
             },
             session: {
-              SAME_SITE: 'lax',
-              COOKIE_SECURE: 'true',
-              COOKIE_NAME: 'gitea_session',
+              SAME_SITE: "lax",
+              COOKIE_SECURE: "true",
+              COOKIE_NAME: "gitea_session",
               DOMAIN: host,
             },
-            repository: { DEFAULT_PRIVATE: 'true', FORCE_PRIVATE: 'true' },
+            repository: { DEFAULT_PRIVATE: "true", FORCE_PRIVATE: "true" },
           },
         },
 
-        'redis-cluster': { enabled: false },
+        "redis-cluster": { enabled: false },
         postgresql: { enabled: false },
-        'postgresql-ha': { enabled: false },
+        "postgresql-ha": { enabled: false },
 
         persistence: { enabled: true, storageClass },
 
-        strategy: { type: 'Recreate' },
+        strategy: { type: "Recreate" },
       },
     },
-    { provider, dependsOn }
+    { provider, dependsOn },
   );
 
   return gitea;
