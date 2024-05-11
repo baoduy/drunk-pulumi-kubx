@@ -3,7 +3,7 @@ import Namespace from "../../Core/Namespace";
 import * as k8s from "@pulumi/kubernetes";
 import { DeploymentIngress } from "../../Deployment";
 import { NginxIngress } from "../../Ingress";
-import { interpolate } from "@pulumi/pulumi";
+import { Input, interpolate } from "@pulumi/pulumi";
 import { getTlsName } from "../../CertHelper";
 import {
   getDomainFromUrl,
@@ -20,6 +20,8 @@ interface Props extends K8sArgs {
   name?: string;
   namespace?: string;
   storageClassName: string;
+  redis: { host: Input<string>; port: Input<string>; password: Input<string> };
+
   auth?: {
     enableAzureAD?: boolean;
   };
@@ -37,6 +39,7 @@ interface Props extends K8sArgs {
 export default ({
   name = "argo-cd",
   namespace = "argo-cd",
+  redis,
   ingressConfig,
   auth,
   storageClassName,
@@ -80,14 +83,10 @@ export default ({
           },
         },
 
-        // redis: {
-        //   auth: {
-        //     existingSecret: randomPassword({
-        //       name: `${name}-redis-pass`,
-        //       policy: false,
-        //     }).result,
-        //   },
-        // },
+        redis: {
+          enabled: false,
+        },
+        externalRedis: { enabled: true, ...redis },
         rbac: { create: true },
         //SSO
         dex: {
@@ -102,6 +101,7 @@ export default ({
           //DEX config
           config: identity
             ? {
+                url,
                 "dex.config": interpolate`connectors:\n- type: microsoft\n  id: microsoft\n  name:  Azure AD\n  config:\n    clientID: ${identity.clientId}\n    clientSecret: ${identity.clientSecret}\n    redirectURI: ${url}/api/dex/callback\n    tenant: ${tenantId}\n    groups:\n      - AKS-Cluster-Admin\n`,
               }
             : undefined,
