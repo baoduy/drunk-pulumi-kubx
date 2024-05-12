@@ -81,6 +81,7 @@ const createAzureADIdentity = ({
 };
 
 interface GiteaRepoProps extends DefaultK8sArgs {
+  appTitle?: Input<string>;
   vaultInfo?: KeyVaultInfo;
   storageClass: Input<string>;
   host: string;
@@ -140,6 +141,7 @@ interface GiteaRepoProps extends DefaultK8sArgs {
 // https://gitea.com/gitea/helm-chart
 export default ({
   name = "gitea",
+  appTitle,
   namespace,
   host,
   auth = { disableRegistration: true },
@@ -221,8 +223,10 @@ export default ({
           ldap: auth?.ldap,
 
           config: {
-            actions: { ENABLED: `${Boolean(enabledActions)}` },
+            APP_NAME: appTitle ?? name,
+            RUN_MODE: "prod",
 
+            actions: { ENABLED: `${Boolean(enabledActions)}` },
             admin: {
               DISABLE_REGULAR_ORG_CREATION: "true", //Only Admin able to create new Organization
             },
@@ -254,7 +258,7 @@ export default ({
               DISABLE_REGISTRATION: auth?.disableRegistration
                 ? "true"
                 : "false",
-              ENABLE_BASIC_AUTHENTICATION: "false", // `${Boolean(auth?.localAdmin)}`,
+              ENABLE_BASIC_AUTHENTICATION: "false",
               ALLOW_ONLY_EXTERNAL_REGISTRATION: "true",
               DEFAULT_ALLOW_CREATE_ORGANIZATION: "true", //only Admin able to create Organization
               SHOW_REGISTRATION_BUTTON: "false",
@@ -282,7 +286,13 @@ export default ({
               COOKIE_NAME: "gitea_session",
               DOMAIN: host,
             },
-            repository: { DEFAULT_PRIVATE: "true", FORCE_PRIVATE: "true" },
+            repository: {
+              DEFAULT_PRIVATE: "true",
+              FORCE_PRIVATE: "true",
+              DEFAULT_PUSH_CREATE_PRIVATE: "true",
+              ENABLE_PUSH_CREATE_USER: "false",
+              ENABLE_PUSH_CREATE_ORG: "false",
+            },
           },
         },
 
