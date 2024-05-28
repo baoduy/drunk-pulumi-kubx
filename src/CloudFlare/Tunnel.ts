@@ -51,9 +51,7 @@ export default ({
   return Deployment({
     name,
     namespace,
-
     secrets: { token: parameters.token },
-
     podConfig: {
       ports: { http: 3000 },
       image: "cloudflare/cloudflared:latest",
@@ -90,6 +88,9 @@ export default ({
       replicas,
       args,
     },
+
+    //No need service for this cloudflare tunnel
+    serviceConfig: false,
 
     ...others,
   });

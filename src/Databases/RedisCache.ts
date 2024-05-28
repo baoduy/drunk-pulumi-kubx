@@ -1,18 +1,18 @@
-import { MySqlProps } from '../types';
-import { randomPassword } from '@drunk-pulumi/azure/Core/Random';
-import { addCustomSecret } from '@drunk-pulumi/azure/KeyVault/CustomHelper';
-import { interpolate } from '@pulumi/pulumi';
-import Deployment from '../Deployment';
-import { createPVCForStorageClass } from '../Storage';
+import { MySqlProps } from "../types";
+import { randomPassword } from "@drunk-pulumi/azure/Core/Random";
+import { addCustomSecret } from "@drunk-pulumi/azure/KeyVault/CustomHelper";
+import { interpolate } from "@pulumi/pulumi";
+import Deployment from "../Deployment";
+import { createPVCForStorageClass } from "../Storage";
 
 interface Props extends MySqlProps {
   version?: string;
 }
 
 export default ({
-  name = 'redis',
+  name = "redis",
   namespace,
-  version = 'latest',
+  version = "latest",
   vaultInfo,
   auth,
   storageClassName,
@@ -61,9 +61,9 @@ export default ({
       volumes: persisVolume
         ? [
             {
-              name: 'redis-data',
+              name: "redis-data",
               persistentVolumeClaim: persisVolume.metadata.name,
-              mountPath: '/data',
+              mountPath: "/data",
               readOnly: false,
             },
           ]
@@ -72,11 +72,13 @@ export default ({
     deploymentConfig: {
       args: [interpolate`--requirepass ${password}`],
     },
+    serviceConfig: { usePodPort: true },
   });
 
   return {
     redis,
     host: interpolate`${name}.${namespace}.svc.cluster.local`,
+    port,
     password,
   };
 };

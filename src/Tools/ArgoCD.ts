@@ -1,21 +1,21 @@
-import { K8sArgs } from "../../types";
-import Namespace from "../../Core/Namespace";
+import { K8sArgs } from "../types";
+import Namespace from "../Core/Namespace";
 import * as k8s from "@pulumi/kubernetes";
-import { DeploymentIngress } from "../../Deployment";
-import { NginxIngress } from "../../Ingress";
-import { Input, interpolate } from "@pulumi/pulumi";
-import { getTlsName } from "../../CertHelper";
+import { DeploymentIngress } from "../Deployment";
+import { NginxIngress } from "../Ingress";
+import { Input, interpolate, output } from "@pulumi/pulumi";
+import { getTlsName } from "../CertHelper";
+import Role from "@drunk-pulumi/azure/AzAd/Role";
 import {
   getDomainFromUrl,
   getRootDomainFromUrl,
-  toBase64,
 } from "@drunk-pulumi/azure/Common/Helpers";
-import { IngressProps } from "../../Ingress/type";
+import { IngressProps } from "../Ingress/type";
 import identityCreator from "@drunk-pulumi/azure/AzAd/Identity";
 import { KeyVaultInfo } from "@drunk-pulumi/azure/types";
-import { tenantId } from "@drunk-pulumi/azure/Common/AzureEnv";
+import { currentEnv, tenantId } from "@drunk-pulumi/azure/Common/AzureEnv";
 import { randomPassword } from "@drunk-pulumi/azure/Core/Random";
-import KsSecret from "../../Core/KsSecret";
+import KsSecret from "../Core/KsSecret";
 
 interface Props extends K8sArgs {
   name?: string;
@@ -49,6 +49,11 @@ export default ({
 }: Props) => {
   const ns = Namespace({ name, ...others });
   const url = `https://${ingressConfig?.hostName}`;
+  const adminGroup = Role({
+    env: currentEnv,
+    appName: name,
+    roleName: "Admin",
+  });
   const identity = auth?.enableAzureAD
     ? identityCreator({
         name,
@@ -56,7 +61,7 @@ export default ({
         createPrincipal: true,
         publicClient: false,
         appType: "web",
-        replyUrls: [`${url}/argo-cd/auth/callback`],
+        replyUrls: [`${url}/auth/callback`],
         vaultInfo,
       })
     : undefined;
@@ -81,7 +86,18 @@ export default ({
           storageClass: storageClassName,
         },
         config: {
+          rbac: {
+            "policy.default": "role:readonly",
+            "policy.csv": interpolate`g, ${adminGroup.objectId}, role:admin\n`,
+          },
           secret: {
+            extra: {
+              "server.secretkey": randomPassword({
+                name: `${name}-secretkey`,
+                policy: false,
+                vaultInfo,
+              }).result,
+            },
             argocdServerAdminPassword: randomPassword({
               name: `${name}-admin-password`,
               policy: false,
@@ -91,74 +107,37 @@ export default ({
           },
         },
 
-        redis: {
-          enabled: false,
-        },
         externalRedis: {
           enabled: true,
           ...redis,
-          existingSecret: secret.metadata.name,
+          existingSecret: "argo-cd-redis",
         },
+        redis: { enabled: false },
         rbac: { create: true },
-        //SSO
-        dex: {
-          image: { tag: "v2.30.2" },
-          enabled: auth?.enableAzureAD,
-          // extraEnvVars: [
-          //   { name: 'ARGOCD_DEX_SERVER_DISABLE_TLS', value: 'true' },
-          // ],
-        },
+        dex: { enabled: false },
+
         server: {
           url,
-          //DEX config
-          config: identity
-            ? {
-                url,
-                "dex.config": interpolate`connectors:\n- type: microsoft\n  id: microsoft\n  name:  Azure AD\n  config:\n    clientID: ${identity.clientId}\n    clientSecret: ${identity.clientSecret}\n    redirectURI: ${url}/api/dex/callback\n    tenant: ${tenantId}\n    groups:\n      - AKS-Cluster-Admin\n`,
-              }
-            : undefined,
-
-          //Ingress
-          // ingress: ingressConfig
-          //   ? {
-          //       enabled: true,
-          //       hostname: ingressConfig.hostName,
-          //       ingressClassName: ingressConfig.className || 'nginx',
-          //     }
-          //   : undefined,
+          config: {
+            "admin.enabled": "false",
+            "statusbadge.enabled": "true",
+            "oidc.config": output({
+              name: "AzureAD",
+              issuer: interpolate`https://login.microsoftonline.com/${tenantId}/v2.0`,
+              clientID: identity?.clientId,
+              clientSecret: identity?.clientSecret,
+              requestedIDTokenClaims: {
+                groups: {
+                  essential: true,
+                },
+              },
+              requestedScopes: ["openid", "profile", "email"],
+            }).apply(JSON.stringify),
+          },
         },
       },
-
-      transformations: [
-        (o, op) => {
-          if (o.kind === "Secret") {
-            if (o.metadata.name === "argocd-secret") {
-              o.data["server.secretkey"] = randomPassword({
-                name: `${name}-secretkey`,
-                policy: false,
-                vaultInfo,
-              }).result.apply(toBase64);
-
-              if (identity)
-                o.data["oidc.azure.clientSecret"] =
-                  identity.clientSecret?.apply(toBase64);
-
-              //Ignore fields
-              op.ignoreChanges = ["admin.password", "admin.passwordMtime"];
-            }
-
-            if (o.metadata.name === "argo-cd-redis") {
-              o.data["redis-password"] = randomPassword({
-                name: `${name}-redis-password`,
-                policy: false,
-                options: { special: false },
-              }).result.apply(toBase64);
-            }
-          }
-        },
-      ],
     },
-    { dependsOn: ns, provider: others.provider },
+    { dependsOn: ns, provider: others.provider }
   );
 
   if (ingressConfig?.enableIngress) {
@@ -175,7 +154,7 @@ export default ({
           ingressConfig.certManagerIssuer
             ? getDomainFromUrl(ingressConfig.hostName)
             : getRootDomainFromUrl(ingressConfig.hostName),
-          Boolean(ingressConfig.certManagerIssuer),
+          Boolean(ingressConfig.certManagerIssuer)
         ),
 
       proxy: { backendProtocol: "HTTPS" },
@@ -190,4 +169,6 @@ export default ({
 
     NginxIngress(ingressProps);
   }
+
+  return { argoCD, identity };
 };
