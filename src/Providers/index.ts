@@ -1,15 +1,16 @@
-import { DefaultK8sArgs } from '../types';
-import * as k8s from '@pulumi/kubernetes';
-import { getK8sProviderName } from '@drunk-pulumi/azure/Common/Naming';
+import { DefaultK8sArgs } from "../types";
+import * as k8s from "@pulumi/kubernetes";
+import { getK8sProviderName } from "@drunk-pulumi/azure/Common/Naming";
+import { Input } from "@pulumi/pulumi";
 
-interface Props extends Omit<DefaultK8sArgs, 'provider' | 'namespace'> {
+interface Props extends Omit<DefaultK8sArgs, "provider" | "namespace"> {
   namespace?: string;
   ignoreChanges?: boolean;
-  kubeconfig: string;
+  kubeconfig: Input<string>;
 }
 
 export const createProvider = ({
-  name = 'ks-provider',
+  name = "ks-provider",
   ignoreChanges,
   ...others
 }: Props) => {
@@ -21,6 +22,6 @@ export const createProvider = ({
       suppressDeprecationWarnings: true,
       suppressHelmHookWarnings: true,
     },
-    { ignoreChanges: ignoreChanges ? ['kubeconfig'] : undefined }
+    { ignoreChanges: ignoreChanges ? ["kubeconfig"] : undefined },
   );
 };
