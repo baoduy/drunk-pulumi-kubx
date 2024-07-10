@@ -1,17 +1,17 @@
-import { getKubeDomainCert } from './Helpers';
-import { getTlsName } from './CertHelper';
-import * as fs from 'fs';
-import { KeyVaultInfo } from '@drunk-pulumi/azure/types';
-import { getSecret } from '@drunk-pulumi/azure/KeyVault/Helper';
-import { K8sArgs } from './types';
-import ksCertSecret from './Core/KsCertSecret';
-import { convertPfxToPem } from '@drunk-pulumi/azure/Certificate';
+import { getKubeDomainCert } from "./Helpers";
+import { getTlsName } from "./CertHelper";
+import * as fs from "fs";
+import { KeyVaultInfo } from "@drunk-pulumi/azure/types";
+import { getSecret } from "@drunk-pulumi/azure/KeyVault/Helper";
+import { K8sArgs } from "./types";
+import ksCertSecret from "./Core/KsCertSecret";
+import { convertPfxToPem } from "@drunk-pulumi/azure/Certificate";
 
-export interface FromCertOrderProps extends K8sArgs {
+export type FromCertOrderProps = K8sArgs & {
   namespaces: string[];
   /** The cert name or domain name */
   certName: string;
-}
+};
 
 /** Import Cert to K8s from Azure Cert Order*/
 export const certImportFromCertOrder = async ({
@@ -29,18 +29,22 @@ export const certImportFromCertOrder = async ({
       namespace: n,
       certInfo: cert,
       ...others,
-    })
+    }),
   );
 };
 
 const getCertFromFolder = (folder: string) => {
-  const cert = fs.readFileSync(`./${folder}/cert.crt`, { encoding: 'utf8' });
-  const ca = fs.readFileSync(`./${folder}/ca.crt`, { encoding: 'utf8' });
+  const cert = fs.readFileSync(`./${folder}/cert.crt`, { encoding: "utf8" });
+  const ca = fs.readFileSync(`./${folder}/ca.crt`, { encoding: "utf8" });
   const privateKey = fs.readFileSync(`./${folder}/private.key`, {
-    encoding: 'utf8',
+    encoding: "utf8",
   });
 
   return { cert, ca, privateKey };
+};
+
+export type ImportCertFromFileProps = FromCertOrderProps & {
+  certFolder: string;
 };
 
 export const certImportFromFolder = ({
@@ -48,7 +52,7 @@ export const certImportFromFolder = ({
   namespaces,
   certFolder,
   ...others
-}: FromCertOrderProps & { certFolder: string }) => {
+}: ImportCertFromFileProps) => {
   const cert = getCertFromFolder(certFolder);
   if (!cert) return;
 
@@ -59,17 +63,17 @@ export const certImportFromFolder = ({
       namespace: n,
       certInfo: cert,
       ...others,
-    })
+    }),
   );
 
   return name;
 };
 
-interface ImportCertFromVaultProps extends K8sArgs {
+export type ImportCertFromVaultProps = K8sArgs & {
   certNames: string[];
   namespace: string;
   vaultInfo: KeyVaultInfo;
-}
+};
 
 export const certImportFromVault = async ({
   certNames,
@@ -88,7 +92,7 @@ export const certImportFromVault = async ({
       const pems = cert?.value
         ? convertPfxToPem({
             base64Cert: cert.value,
-            password: '',
+            password: "",
           })
         : undefined;
 
@@ -100,6 +104,6 @@ export const certImportFromVault = async ({
           ...others,
         });
       }
-    })
+    }),
   );
 };
