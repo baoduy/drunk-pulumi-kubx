@@ -1,34 +1,43 @@
-import Namespace from './Namespace';
-import Nginx from './Nginx';
-import Monitoring, { MonitoringProps } from './Monitoring';
-import CertManager, { CertManagerProps } from './CertManager';
-import { Input, Resource } from '@pulumi/pulumi';
-import StorageClass, { StorageClassProps } from './StorageClass';
-import { K8sArgs } from '../types';
-import MetalLB, { MetalLBProps } from './LoadBalancer/MetalLB';
-import Longhorn, { LonghornProps } from '../Storage/Longhorn';
+import Namespace from "./Namespace";
+import Nginx, { IngressClassTypes, NginxHelmProps } from "./Nginx";
+import Monitoring, { MonitoringProps } from "./Monitoring";
+import CertManager, { CertManagerProps } from "./CertManager";
+import { Input, Resource } from "@pulumi/pulumi";
+import StorageClass, { StorageClassProps } from "./StorageClass";
+import { K8sArgs } from "../types";
+import MetalLB, { MetalLBProps } from "./LoadBalancer/MetalLB";
+import Longhorn, { LonghornProps } from "../Storage/Longhorn";
 
 interface NginxItemProps {
   name: string;
+  ingressClass: IngressClassTypes;
+
+  /** Either public IP address or private IpAddress MUST be provided. */
   publicIpAddress?: string;
-  /**Use this in case the ingress behind a firewall*/
+  /** Use this in case the ingress behind a firewall */
   internalIpAddress?: string;
 
-  /**Expose TCP Ports {port: dnsName} */
-  tcp?: { [key: number]: string };
-  /**Expose UDP ports  {port: dnsName} */
-  udp?: { [key: number]: string };
+  props?: Omit<
+    NginxHelmProps,
+    | "namespace"
+    | "ingressClass"
+    | "name"
+    | "provider"
+    | "resources"
+    | "version"
+    | "network"
+  >;
 }
 
 interface NginxProps {
   namespace: string;
   version?: string;
-  replicaCount?: number;
   vnetResourceGroup?: string;
-  internalIngress?: boolean;
-  allowSnippetAnnotations?: boolean;
-  public?: NginxItemProps & { forceUseIngressClass?: boolean };
-  private?: Omit<NginxItemProps, 'publicIpAddress'>;
+  //Auto detect based on IpAddress Type
+  //internalALBIngress?: boolean;
+
+  public?: NginxItemProps;
+  private?: Omit<NginxItemProps, "publicIpAddress">;
 }
 
 interface Props extends K8sArgs {
@@ -38,13 +47,13 @@ interface Props extends K8sArgs {
       [key: string]: string;
     };
   }>;
-  metalLb?: Omit<MetalLBProps, 'provider' | 'dependsOn'>;
-  longhorn?: Omit<LonghornProps, 'provider' | 'dependsOn'>;
+  metalLb?: Omit<MetalLBProps, "provider" | "dependsOn">;
+  longhorn?: Omit<LonghornProps, "provider" | "dependsOn">;
   nginx?: NginxProps;
-  monitoring?: Omit<MonitoringProps, 'provider' | 'dependsOn'>;
-  certManager?: Omit<CertManagerProps, 'namespace' | 'provider' | 'dependsOn'>;
+  monitoring?: Omit<MonitoringProps, "provider" | "dependsOn">;
+  certManager?: Omit<CertManagerProps, "namespace" | "provider" | "dependsOn">;
   storageClasses?: {
-    [key: string]: Omit<StorageClassProps, 'provider' | 'name'>;
+    [key: string]: Omit<StorageClassProps, "provider" | "name">;
   };
   enableStaticIpEgress?: { publicIpAddress?: Input<string> };
 }
@@ -89,7 +98,7 @@ export default async ({
         ...certManager,
         provider,
         dependsOn: resources,
-      })
+      }),
     );
   }
 
@@ -106,10 +115,7 @@ export default async ({
 const nginxCreator = ({
   namespace,
   version,
-  replicaCount,
   vnetResourceGroup,
-  internalIngress,
-  allowSnippetAnnotations,
   provider,
 
   ...info
@@ -122,19 +128,15 @@ const nginxCreator = ({
   if (info.public) {
     //Public
     publicIngress = Nginx({
+      ...info.public.props,
+
       name: info.public.name,
       version,
       namespace,
-      replicaCount,
-      allowSnippetAnnotations,
-      useIngressClassOnly:
-        info.public.forceUseIngressClass || info.private !== undefined,
-
-      tcp: info.public.tcp,
-      udp: info.public.udp,
+      ingressClass: "public",
 
       network: {
-        internalIngress,
+        internalALBIngress: Boolean(info.public.internalIpAddress),
         vnetResourceGroup,
         loadBalancerIP:
           info.public.publicIpAddress || info.public.internalIpAddress,
@@ -147,17 +149,15 @@ const nginxCreator = ({
   if (info.private) {
     //Private
     privateIngress = Nginx({
+      ...info.private.props,
+
       name: info.private.name,
       version,
       namespace,
-      useIngressClassOnly: true,
-      allowSnippetAnnotations,
-
-      tcp: info.private.tcp,
-      udp: info.private.udp,
+      ingressClass: "private",
 
       network: {
-        internalIngress,
+        internalALBIngress: true,
         vnetResourceGroup,
         loadBalancerIP: info.private.internalIpAddress,
       },
