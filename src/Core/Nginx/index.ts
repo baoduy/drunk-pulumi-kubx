@@ -1,33 +1,34 @@
-import * as k8s from "@pulumi/kubernetes";
-import * as pulumi from "@pulumi/pulumi";
-import { Input } from "@pulumi/pulumi";
-import { DefaultK8sArgs } from "../../types";
-import { applyDeploymentRules } from "../SecurityRules";
+import * as k8s from '@pulumi/kubernetes';
+import * as pulumi from '@pulumi/pulumi';
+import { Input } from '@pulumi/pulumi';
+import { DefaultK8sArgs } from '../../types';
+import { applyDeploymentRules } from '../SecurityRules';
 
 const defaultConfigs = {
-  useForwardedHeaders: "true",
-  computeFullForwardedFor: "true",
-  useProxyProtocol: "true",
-  "use-forwarded-headers": "true",
-  "disable-access-log": "true",
-  "proxy-buffer-size": "800k",
-  "client-header-buffer-size": "800k",
-  client_max_body_size: "10m",
-  "enable-modsecurity": "true",
+  useForwardedHeaders: 'true',
+  computeFullForwardedFor: 'true',
+  useProxyProtocol: 'true',
+  'use-forwarded-headers': 'true',
+  'disable-access-log': 'true',
+  'proxy-buffer-size': '800k',
+  'client-header-buffer-size': '800k',
+  client_max_body_size: '10m',
+  'enable-modsecurity': 'true',
   //'modsecurity-snippet': ``,
-  "enable-owasp-modsecurity-crs": "true",
-  "worker-shutdown-timeout": "100s",
-  "worker-connections": "1024",
-  "worker-processes": "4", //or auto
-  "annotation-value-word-blocklist":
-    "load_module,lua_package,_by_lua,location,root,proxy_pass,serviceaccount,{,},\\", //Remove single quote from annotation-value-word-blocklist to allows security content.
+  'enable-owasp-modsecurity-crs': 'true',
+  'worker-shutdown-timeout': '100s',
+  'worker-connections': '1024',
+  'worker-processes': '4', //or auto
+  'annotation-value-word-blocklist':
+    'load_module,lua_package,_by_lua,location,root,proxy_pass,serviceaccount,{,},\\', //Remove single quote from annotation-value-word-blocklist to allows security content.
 };
 
-export type IngressClassTypes = "public" | "private" | "nginx" | string;
+export type IngressClassTypes = 'public' | 'private' | 'nginx' | string;
 
 export type NginxHelmProps = DefaultK8sArgs & {
   version?: string;
   replicaCount?: number;
+  isDefaultIngress?: boolean;
   ingressClass?: IngressClassTypes;
   allowSnippetAnnotations?: boolean;
   /**Default SSL cert with format namspace/secretname*/
@@ -53,7 +54,6 @@ export type NginxHelmProps = DefaultK8sArgs & {
   /** Set Proxy Headers. It will be applied to all requests*/
   addHeaders?: { [key: string]: string };
   proxySetHeaders?: { [key: string]: string };
-
   enableDebug?: boolean;
 };
 
@@ -63,9 +63,10 @@ export type NginxHelmProps = DefaultK8sArgs & {
  */
 
 export default ({
-  name = "nginx",
-  namespace = "nginx",
-  ingressClass = "nginx",
+  name = 'nginx',
+  namespace = 'nginx',
+  ingressClass = 'nginx',
+  isDefaultIngress,
   version,
   allowSnippetAnnotations,
   replicaCount = 1,
@@ -85,17 +86,17 @@ export default ({
   const annotations: { [key: string]: Input<string> } = {};
 
   if (network.internalALBIngress) {
-    annotations["service.beta.kubernetes.io/azure-load-balancer-internal"] =
-      "true";
+    annotations['service.beta.kubernetes.io/azure-load-balancer-internal'] =
+      'true';
   }
   if (network.vnetResourceGroup) {
     annotations[
-      "service.beta.kubernetes.io/azure-load-balancer-resource-group"
+      'service.beta.kubernetes.io/azure-load-balancer-resource-group'
     ] = network.vnetResourceGroup;
   }
   if (network.internalSubnetName) {
     annotations[
-      "service.beta.kubernetes.io/azure-load-balancer-internal-subnet"
+      'service.beta.kubernetes.io/azure-load-balancer-internal-subnet'
     ] = network.internalSubnetName;
   }
 
@@ -104,10 +105,10 @@ export default ({
     name,
     {
       namespace,
-      chart: "ingress-nginx",
+      chart: 'ingress-nginx',
       version,
       fetchOpts: {
-        repo: "https://kubernetes.github.io/ingress-nginx",
+        repo: 'https://kubernetes.github.io/ingress-nginx',
       },
       skipAwait: true,
       values: {
@@ -126,7 +127,7 @@ export default ({
           config: {
             ...defaultConfigs,
             ...config,
-            "error-log-level": enableDebug ? "debug" : "notice", // notice or error
+            'error-log-level': enableDebug ? 'debug' : 'notice', // notice or error
           },
 
           useIngressClassOnly: true,
@@ -134,37 +135,36 @@ export default ({
 
           ingressClass,
           ingressClassResource: {
-            name,
-            controllerValue: `k8s.io/nginx-${name}`,
+            name: ingressClass,
+            controllerValue: `k8s.io/ingress-${ingressClass}`,
             enabled: true,
-            default: ingressClass,
+            default: isDefaultIngress,
           },
-
           nodeSelector: {
-            "kubernetes.io/os": "linux",
+            'kubernetes.io/os': 'linux',
           },
 
           service: {
-            externalTrafficPolicy: "Local",
+            externalTrafficPolicy: 'Local',
             annotations,
             clusterIP: network.clusterIP,
             loadBalancerIP: network.loadBalancerIP,
           },
           resources: {
             limits: {
-              cpu: "1000m",
-              memory: "1Gi",
+              cpu: '1000m',
+              memory: '1Gi',
             },
             requests: {
-              cpu: "10m",
-              memory: "10Mi",
+              cpu: '10m',
+              memory: '10Mi',
             },
           },
           // metrics: {
           //   enabled: true,
           // },
           extraArgs: defaultSslCertSecretName
-            ? { "default-ssl-certificate": defaultSslCertSecretName }
+            ? { 'default-ssl-certificate': defaultSslCertSecretName }
             : undefined,
         },
       },
