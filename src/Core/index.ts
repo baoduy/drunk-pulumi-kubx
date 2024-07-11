@@ -26,6 +26,7 @@ interface NginxItemProps {
     | 'resources'
     | 'version'
     | 'network'
+    | 'isDefaultIngress'
   >;
 }
 
@@ -132,6 +133,7 @@ const nginxCreator = ({
 
       name: info.public.name,
       ingressClass: info.public.ingressClass ?? info.public.name,
+      isDefaultIngress: !Boolean(info.private),
       version,
       namespace,
 
