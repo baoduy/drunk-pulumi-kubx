@@ -23,12 +23,12 @@ const defaultConfigs = {
     "load_module,lua_package,_by_lua,location,root,proxy_pass,serviceaccount,{,},\\", //Remove single quote from annotation-value-word-blocklist to allows security content.
 };
 
-interface Props extends DefaultK8sArgs {
-  version?: string;
+export type IngressClassTypes = "public" | "private" | "nginx" | string;
 
+export type NginxHelmProps = DefaultK8sArgs & {
+  version?: string;
   replicaCount?: number;
-  useIngressClassOnly?: boolean;
-  defaultIngressClass?: boolean;
+  ingressClass?: IngressClassTypes;
   allowSnippetAnnotations?: boolean;
   /**Default SSL cert with format namspace/secretname*/
   defaultSslCertSecretName?: Input<string>;
@@ -36,8 +36,9 @@ interface Props extends DefaultK8sArgs {
   network: {
     /** The resource group of virtual network and public IpAddress. */
     vnetResourceGroup?: string;
+    internalALBIngress?: boolean;
     internalSubnetName?: pulumi.Output<string>;
-    internalIngress?: boolean;
+
     loadBalancerIP?: pulumi.Input<string>;
     clusterIP?: pulumi.Input<string>;
   };
@@ -54,7 +55,7 @@ interface Props extends DefaultK8sArgs {
   proxySetHeaders?: { [key: string]: string };
 
   enableDebug?: boolean;
-}
+};
 
 /**
  * kubectl exec ingress-nginx-controller-873061567-4n3k2 -n ingress-nginx -- cat /etc/nginx/nginx.conf >> nginx.conf
@@ -64,10 +65,8 @@ interface Props extends DefaultK8sArgs {
 export default ({
   name = "nginx",
   namespace = "nginx",
+  ingressClass = "nginx",
   version,
-
-  useIngressClassOnly = true,
-  defaultIngressClass,
   allowSnippetAnnotations,
   replicaCount = 1,
   network,
@@ -81,11 +80,11 @@ export default ({
   enableDebug = false,
   provider,
   dependsOn,
-}: Props) => {
+}: NginxHelmProps) => {
   //Annotations
   const annotations: { [key: string]: Input<string> } = {};
 
-  if (network.internalIngress) {
+  if (network.internalALBIngress) {
     annotations["service.beta.kubernetes.io/azure-load-balancer-internal"] =
       "true";
   }
@@ -130,18 +129,16 @@ export default ({
             "error-log-level": enableDebug ? "debug" : "notice", // notice or error
           },
 
-          useIngressClassOnly,
-          watchIngressWithoutClass: defaultIngressClass,
+          useIngressClassOnly: true,
+          watchIngressWithoutClass: false,
 
-          ingressClass: useIngressClassOnly ? name : "nginx",
-          ingressClassResource: useIngressClassOnly
-            ? {
-                name,
-                controllerValue: `k8s.io/nginx-${name}`,
-                enabled: true,
-                default: defaultIngressClass,
-              }
-            : undefined,
+          ingressClass,
+          ingressClassResource: {
+            name,
+            controllerValue: `k8s.io/nginx-${name}`,
+            enabled: true,
+            default: ingressClass,
+          },
 
           nodeSelector: {
             "kubernetes.io/os": "linux",
