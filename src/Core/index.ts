@@ -1,12 +1,12 @@
-import Namespace from "./Namespace";
-import Nginx, { IngressClassTypes, NginxHelmProps } from "./Nginx";
-import Monitoring, { MonitoringProps } from "./Monitoring";
-import CertManager, { CertManagerProps } from "./CertManager";
-import { Input, Resource } from "@pulumi/pulumi";
-import StorageClass, { StorageClassProps } from "./StorageClass";
-import { K8sArgs } from "../types";
-import MetalLB, { MetalLBProps } from "./LoadBalancer/MetalLB";
-import Longhorn, { LonghornProps } from "../Storage/Longhorn";
+import Namespace from './Namespace';
+import Nginx, { IngressClassTypes, NginxHelmProps } from './Nginx';
+import Monitoring, { MonitoringProps } from './Monitoring';
+import CertManager, { CertManagerProps } from './CertManager';
+import { Input, Resource } from '@pulumi/pulumi';
+import StorageClass, { StorageClassProps } from './StorageClass';
+import { K8sArgs } from '../types';
+import MetalLB, { MetalLBProps } from './LoadBalancer/MetalLB';
+import Longhorn, { LonghornProps } from '../Storage/Longhorn';
 
 interface NginxItemProps {
   name: string;
@@ -19,13 +19,13 @@ interface NginxItemProps {
 
   props?: Omit<
     NginxHelmProps,
-    | "namespace"
-    | "ingressClass"
-    | "name"
-    | "provider"
-    | "resources"
-    | "version"
-    | "network"
+    | 'namespace'
+    | 'ingressClass'
+    | 'name'
+    | 'provider'
+    | 'resources'
+    | 'version'
+    | 'network'
   >;
 }
 
@@ -37,7 +37,7 @@ interface NginxProps {
   //internalALBIngress?: boolean;
 
   public?: NginxItemProps;
-  private?: Omit<NginxItemProps, "publicIpAddress">;
+  private?: Omit<NginxItemProps, 'publicIpAddress'>;
 }
 
 interface Props extends K8sArgs {
@@ -47,13 +47,13 @@ interface Props extends K8sArgs {
       [key: string]: string;
     };
   }>;
-  metalLb?: Omit<MetalLBProps, "provider" | "dependsOn">;
-  longhorn?: Omit<LonghornProps, "provider" | "dependsOn">;
+  metalLb?: Omit<MetalLBProps, 'provider' | 'dependsOn'>;
+  longhorn?: Omit<LonghornProps, 'provider' | 'dependsOn'>;
   nginx?: NginxProps;
-  monitoring?: Omit<MonitoringProps, "provider" | "dependsOn">;
-  certManager?: Omit<CertManagerProps, "namespace" | "provider" | "dependsOn">;
+  monitoring?: Omit<MonitoringProps, 'provider' | 'dependsOn'>;
+  certManager?: Omit<CertManagerProps, 'namespace' | 'provider' | 'dependsOn'>;
   storageClasses?: {
-    [key: string]: Omit<StorageClassProps, "provider" | "name">;
+    [key: string]: Omit<StorageClassProps, 'provider' | 'name'>;
   };
   enableStaticIpEgress?: { publicIpAddress?: Input<string> };
 }
@@ -133,7 +133,6 @@ const nginxCreator = ({
       name: info.public.name,
       version,
       namespace,
-      ingressClass: "public",
 
       network: {
         internalALBIngress: Boolean(info.public.internalIpAddress),
@@ -154,7 +153,6 @@ const nginxCreator = ({
       name: info.private.name,
       version,
       namespace,
-      ingressClass: "private",
 
       network: {
         internalALBIngress: true,
