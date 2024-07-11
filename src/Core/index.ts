@@ -10,7 +10,7 @@ import Longhorn, { LonghornProps } from '../Storage/Longhorn';
 
 interface NginxItemProps {
   name: string;
-  ingressClass: IngressClassTypes;
+  ingressClass?: IngressClassTypes;
 
   /** Either public IP address or private IpAddress MUST be provided. */
   publicIpAddress?: string;
@@ -131,6 +131,7 @@ const nginxCreator = ({
       ...info.public.props,
 
       name: info.public.name,
+      ingressClass: info.public.ingressClass ?? info.public.name,
       version,
       namespace,
 
@@ -151,6 +152,7 @@ const nginxCreator = ({
       ...info.private.props,
 
       name: info.private.name,
+      ingressClass: info.private.ingressClass ?? info.private.name,
       version,
       namespace,
 
